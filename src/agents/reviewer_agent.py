@@ -20,7 +20,7 @@ class ReviewerAgent(BaseAgent):
     def __init__(self, config: CodingCompetitionConfig = None, tools: List = None):
         # Set up argument parser for structured output BEFORE calling super().__init__
         self.argument_parser = PydanticOutputParser(pydantic_object=CodeReview)
-        self.use_structured_output = True  # Flag to use .with_structured_output()
+        # self.use_structured_output = True  # Flag to use .with_structured_output()
 
         super().__init__(AgentRole.REVIEWER, config, tools)
 
@@ -35,7 +35,7 @@ class ReviewerAgent(BaseAgent):
             # Objective
 
             Your job is to:
-            1. Test both code submissions against the problem's test cases
+            1. Run and test both codes in a sandbox environment using e2b.
             2. Evaluate each submission on three criteria:
                - Correctness (0-5 points): Does it solve the problem correctly?
                - Efficiency (0-3 points): Is it optimized for time/space complexity?
@@ -129,8 +129,8 @@ class ReviewerAgent(BaseAgent):
             - CoderB: {coderB_score}
 
             Your task:
-            1. Use the `run_test_suite` tool to test both submissions against the problem's public tests
-            2. Optionally use `execute_code_sandbox` to test specific edge cases
+            1. Use the `execute_code_sandbox` tool to execute the code submitted by both coders with specific inputs.
+            2. Use the `run_test_suite` tool to run all provided test cases for
             3. Evaluate both submissions on correctness, efficiency, and code quality
             4. Determine the round winner based on total scores
             5. Provide detailed, constructive feedback
@@ -172,6 +172,7 @@ class ReviewerAgent(BaseAgent):
 
     def _post_process_result(self, result: CodeReview, state: Dict[str, Any]) -> Dict[str, Any]:
         """Post-process the result and update the competition state."""
+
 
         # Calculate total scores for this round
         coderA_round_score = (
@@ -240,26 +241,8 @@ class ReviewerAgent(BaseAgent):
         return state
 
     def _parse_result(self, llm_result: Any) -> CodeReview:
-        """Parse the LLM result into a CodeReview object."""
-        import re
-
-        # Extract content if it's an AIMessage
-        if hasattr(llm_result, 'content'):
-            content = llm_result.content
-        else:
-            content = str(llm_result)
-
-        # Try to extract JSON from markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-
-        # Try to find JSON object in the content
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(0)
-
-        return self.argument_parser.parse(content)
+        """Return LLM result as-is since structured output is enforced."""
+        return self.argument_parser.invoke(llm_result)
 
     def _update_conversation_context(self, state: Dict[str, Any], message: str) -> None:
         """Update the conversation context in the state."""

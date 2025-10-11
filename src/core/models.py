@@ -3,7 +3,7 @@ Core data models for the AI coding system.
 Defines rich, validated state structures using Pydantic.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Literal, Dict, Any
 from typing_extensions import TypedDict
 from datetime import datetime
@@ -27,52 +27,58 @@ class AgentRole(str, Enum):
     ROUND_CONTROLLER = "roundcontroller"
     AGGREGATOR = "aggregator"
 
+class CodeComplexity(BaseModel):
+    """
+    Model representing code complexity analysis.
+    """
+    time: str = Field(..., description="Time complexity in Big O notation", type="string")
+    space: str = Field(..., description="Space complexity in Big O notation", type="string")
+
 
 class CodeTest(BaseModel):
     """
     Model representing a code test case.
     """
-    name: str
-    input: Any
-    expected_output: Any
+    name: str = Field(..., description="Name of the test case", min_length=1, type="string")
+    input: str = Field(..., description="Input for the test case", type="string")
+    expected_output: str = Field(..., description="Expected output for the test case", type="string")
+
+    class Config:
+        schema_extra = {
+            "required": ["name", "input", "expected_output"]
+        }
 
 class CodingProblem(BaseModel):
     """
     Model representing a coding problem.
     """
-    id:str
-    title: str
-    entrypoint: str
-    description: str
-    constraints:Dict[str, Any] = Field(default_factory=dict)
-    public_tests: List[CodeTest] = Field(default_factory=list)
-    budgets: Dict[str, int] = Field(default_factory=dict)
+    id: str = Field(..., description="Unique identifier for the coding problem", min_length=1)
+    title: str = Field(..., description="Title of the coding problem", min_length=1)
+    entrypoint: str = Field(..., description="Entrypoint function name", min_length=1)
+    description: str = Field(..., description="Detailed description of the problem", min_length=1)
+    public_tests: List[CodeTest] = Field(default_factory=list, description="List of public test cases", type="array")
+
+
 
 class CodeSubmission(BaseModel):
     """
     Model representing a code submission.
     """
-    code: str
-    language: str
-    entrypoint: str
-    explanation: Optional[str] = None
-    complexity: Optional[Dict[str, str]] = None
+    code: str = Field(..., description="Code submitted by the user", type="string")
+    language: str = Field(..., description="Programming language of the submission", type="string")
+    entrypoint: str = Field(..., description="Entrypoint function name", type="string")
+    explanation: Optional[str] = Field(None, description="Explanation of the code", type="string")
+    complexity: Optional[CodeComplexity] = Field(None, description="Complexity analysis of the code", type="object")
 
 class CompetitionMetrics(BaseModel):
     """Performance and usage metrics"""
-    total_tokens: int = Field(default=0, ge=0)
-    api_calls_made: int = Field(default=0, ge=0)
-    start_time: datetime = Field(default_factory=datetime.now)
-    end_time: Optional[datetime] = None
-    total_duration: Optional[float] = None
+    total_tokens: int = Field(default=0, ge=0, description="Total tokens used", type="integer")
+    api_calls_made: int = Field(default=0, ge=0, description="Number of API calls made", type="integer")
+    start_time: datetime = Field(default_factory=datetime.now, description="Start time of the competition", type="string")
+    end_time: Optional[datetime] = Field(None, description="End time of the competition", type="string")
+    total_duration: Optional[float] = Field(None, description="Total duration of the competition in seconds", type="number")
 
-    def calculate_duration(self) -> float:
-        """Calculate total duration in seconds"""
-        if self.end_time:
-            duration = (self.end_time - self.start_time).total_seconds()
-            self.total_duration = duration
-            return duration
-        return 0.0
+
 
 
 
@@ -156,7 +162,7 @@ class CodingCompetitionConfig(BaseModel):
     """
     max_rounds: int = 3
       # LLM Configuration
-    model_name: str = "gpt-4-turbo-preview"
+    model_name: str = "gpt-4o-mini"
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=1500, ge=100)
     time_per_round: int = 600  # in seconds

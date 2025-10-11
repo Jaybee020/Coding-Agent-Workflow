@@ -20,6 +20,7 @@ class CoderAAgent(BaseAgent):
 
     def __init__(self, config: CodingCompetitionConfig = None,tools:List=None):
         # Set up argument parser for structured output BEFORE calling super().__init__
+        self.use_structured_output = True
         self.argument_parser = PydanticOutputParser(pydantic_object=CodeSubmission)
 
         super().__init__(AgentRole.CODER, config,tools)
@@ -85,11 +86,6 @@ class CoderAAgent(BaseAgent):
             - Efficiency: 10%
 
             """
-
-            "You are CoderA, a skilled programmer participating in a coding competition. "
-            "Your task is to write efficient and correct code solutions to given problems. "
-            "You will also engage in debates with another coder to refine your solutions. "
-            "Focus on clarity, efficiency, and correctness in your code submissions."
         )
 
     def _get_user_prompt(self) -> str:
@@ -135,6 +131,7 @@ class CoderAAgent(BaseAgent):
 
     def _post_process_result(self, result: CodeSubmission, state: Dict[str, Any]) -> Dict[str, Any]:
         """Post-process the result and update the competition state."""
+        print("Result before postprocessing",result)
         if "coderA_submissions" not in state:
             state["coderA_submissions"] = []
         state["coderA_submissions"].append(result)
@@ -144,26 +141,8 @@ class CoderAAgent(BaseAgent):
         return state
 
     def _parse_result(self, llm_result: Any) -> CodeSubmission:
-        """Parse the LLM result into a CodeSubmission object."""
-        import re
-
-        # Extract content if it's an AIMessage
-        if hasattr(llm_result, 'content'):
-            content = llm_result.content
-        else:
-            content = str(llm_result)
-
-        # Try to extract JSON from markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-
-        # Try to find JSON object in the content
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(0)
-
-        return self.argument_parser.parse(content)
+        """Parse LLM result - already handled by argument_parser in chain"""
+        return llm_result
 
     def _update_conversation_context(self, state: Dict[str, Any], message: str) -> None:
         """Update the conversation context in the state."""

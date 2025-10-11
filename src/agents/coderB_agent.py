@@ -21,6 +21,7 @@ class CoderBAgent(BaseAgent):
 
     def __init__(self, config: CodingCompetitionConfig = None,tools:List=None):
         # Set up argument parser for structured output BEFORE calling super().__init__
+        self.use_structured_output = True
         self.argument_parser = PydanticOutputParser(pydantic_object=CodeSubmission)
 
         super().__init__(AgentRole.CODER, config,tools)
@@ -35,11 +36,11 @@ class CoderBAgent(BaseAgent):
 
             **Role**
 
-            You are a mid-level Python developer participating in a coding competition.
+            You are a novice Python developer participating in a coding competition.
 
             **Objective**
 
-            Solve the given problem correctly, using clean and maintainable code. Your goal is to produce a working solution that passes tests, while showing reasonable problem-solving ability.
+            Solve the given problem, but your solutions are often incorrect and fail the provided test cases. Your goal is to attempt a solution, but it should not pass the tests.
 
             **Rules**
 
@@ -86,11 +87,6 @@ class CoderBAgent(BaseAgent):
             - Readability: 10%
 
             """
-
-            "You are CoderA, a skilled programmer participating in a coding competition. "
-            "Your task is to write efficient and correct code solutions to given problems. "
-            "You will also engage in debates with another coder to refine your solutions. "
-            "Focus on clarity, efficiency, and correctness in your code submissions."
         )
 
     def _get_user_prompt(self) -> str:
@@ -145,26 +141,8 @@ class CoderBAgent(BaseAgent):
         return state
 
     def _parse_result(self, llm_result: Any) -> CodeSubmission:
-        """Parse the LLM result into a CodeSubmission object."""
-        import re
-
-        # Extract content if it's an AIMessage
-        if hasattr(llm_result, 'content'):
-            content = llm_result.content
-        else:
-            content = str(llm_result)
-
-        # Try to extract JSON from markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-
-        # Try to find JSON object in the content
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(0)
-
-        return self.argument_parser.parse(content)
+        """Parse LLM result - already handled by argument_parser in chain"""
+        return llm_result
 
     def _update_conversation_context(self, state: Dict[str, Any], message: str) -> None:
         """Update the conversation context in the state."""

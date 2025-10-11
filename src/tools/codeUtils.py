@@ -21,8 +21,8 @@ def generateCodeQuestion(prompt: str) -> str:
     """
     try:
         llm = ChatOpenAI(
-            model="gpt-4-turbo-preview",
-            temperature=0.7
+            model="gpt-4o-mini",
+            temperature=0.7,
         )
 
         system_prompt = """You are a coding problem generator. Create a well-defined coding problem
@@ -38,11 +38,6 @@ def generateCodeQuestion(prompt: str) -> str:
             "title": "Problem Title",
             "entrypoint": "function_name",
             "description": "Detailed problem description with examples",
-            "constraints": {
-                "time_limit": "1 second",
-                "space_limit": "256 MB",
-                "input_constraints": "specific constraints"
-            },
             "public_tests": [
                 {
                     "name": "Test 1",
@@ -50,10 +45,6 @@ def generateCodeQuestion(prompt: str) -> str:
                     "expected_output": "example output"
                 }
             ],
-            "budgets": {
-                "max_attempts": 2,
-                "time_per_attempt": 300
-            }
         }
         """
 
@@ -101,6 +92,7 @@ def executeCode(code: str, input_data: str = "") -> str:
 
             # Execute the code with timeout
             execution = sandbox.run_code(full_code)
+            print("Execution",execution)
 
             # Check for errors
             if execution.error:
@@ -116,6 +108,7 @@ Code executed:
 
             # Success - return formatted output
             output_text = execution.text if execution.text else "[No output]"
+            print("Output Text",output_text)
 
             return f"""✅ EXECUTION SUCCESS
 

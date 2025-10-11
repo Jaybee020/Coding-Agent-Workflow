@@ -13,6 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplat
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_core.messages import ToolMessage, AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
 
 from ..core.models import  CodeExecutionResult, CodingPersonalities, AgentRole, CodingCompetitionConfig,CompetitionState
 
@@ -36,16 +37,20 @@ class BaseAgent(ABC):
             "max_tokens": self.config.max_tokens,
             "timeout": 30,
             "max_retries": 3,
+
         }
 
-        # Add JSON mode only for agents without tools
-        if not self.tools:
-            llm_kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
+        # # Add JSON mode only for agents without tools
+        # if not self.tools:
+        #     llm_kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
 
-        self.llm = ChatOpenAI(**llm_kwargs)
+        self.llm = ChatOpenAI()
 
         # Bind tools to LLM
-        self.llm_with_tools = self.llm.bind_tools(self.tools) if self.tools else self.llm
+        self.llm_with_tools = self.llm.bind_tools(tools) if self.tools else self.llm
+
+        print("Tools bound to LLM:", list(self.tool_map.keys()))
+        print("LLM with tools:", self.llm_with_tools)
 
         # Apply structured output if the agent requests it
         # This must be done AFTER tool binding
@@ -115,6 +120,8 @@ class BaseAgent(ABC):
             # Execute the tool
             result = tool_func.invoke(tool_args)
 
+            print(f"Tool '{tool_name}' executed with args {tool_args}, result: {result}")
+
             # Track tool usage
             self.metrics["tool_calls"] += 1
 
@@ -139,12 +146,14 @@ class BaseAgent(ABC):
         - After tools execute, second call returns Pydantic object
         - If no tools needed, first call returns Pydantic object directly
         """
+
         if hasattr(llm_result, 'tool_calls') and llm_result.tool_calls:
             # Build message history for next LLM call
             messages = []
 
             # Add the AI message with tool calls
             messages.append(llm_result)
+            print("llm result in handle tool calls",llm_result)
 
             # Execute each tool call and add results
             for tool_call in llm_result.tool_calls:

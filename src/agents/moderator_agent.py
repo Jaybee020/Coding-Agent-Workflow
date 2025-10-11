@@ -19,6 +19,7 @@ class ModeratorAgent(BaseAgent):
 
     def __init__(self, config: CodingCompetitionConfig = None, tools: List = None):
         # Set up argument parser for structured output BEFORE calling super().__init__
+        self.use_structured_output = True
         self.argument_parser = PydanticOutputParser(pydantic_object=CodingProblem)
 
         super().__init__(AgentRole.ROUND_CONTROLLER, config, tools)
@@ -57,11 +58,6 @@ class ModeratorAgent(BaseAgent):
                 "title": "<problem title>",
                 "entrypoint": "<function name>",
                 "description": "<detailed problem description including examples>",
-                "constraints": {
-                    "time_limit": "<time limit in seconds>",
-                    "space_limit": "<memory limit>",
-                    "input_constraints": "<input size/type constraints>"
-                },
                 "public_tests": [
                     {
                         "name": "<test name>",
@@ -69,10 +65,6 @@ class ModeratorAgent(BaseAgent):
                         "expected_output": "<expected output>"
                     }
                 ],
-                "budgets": {
-                    "max_attempts": 2,
-                    "time_per_attempt": 300
-                }
             }
             ```
 
@@ -160,32 +152,8 @@ class ModeratorAgent(BaseAgent):
         return state
 
     def _parse_result(self, llm_result: Any) -> CodingProblem:
-        """Parse the LLM result into a CodingProblem object."""
-        import re
-
-        # Extract content if it's an AIMessage
-        if hasattr(llm_result, 'content'):
-            content = llm_result.content
-        else:
-            content = str(llm_result)
-
-        # Try to extract JSON from markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-
-        # Try to find JSON object in the content
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(0)
-
-        try:
-            return self.argument_parser.parse(content)
-        except Exception as e:
-            print(f"\n⚠️  Failed to parse moderator output:")
-            print(f"   Error: {str(e)}")
-            print(f"   Content: {content[:500]}...")
-            raise
+        """Parse LLM result - already handled by argument_parser in chain"""
+        return llm_result
 
     def _update_conversation_context(self, state: Dict[str, Any], message: str) -> None:
         """Update the conversation context in the state."""

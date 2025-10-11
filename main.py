@@ -32,7 +32,7 @@ async def run_competition_example():
     # Configure the competition
     config = CodingCompetitionConfig(
         max_rounds=3,
-        model_name="gpt-4-turbo-preview",
+        model_name="gpt-4o-mini",
         temperature=0.7,
         max_tokens=2000,
         scoring_rules={
@@ -64,7 +64,7 @@ async def run_competition_example():
 
 async def run_custom_competition(
     max_rounds: int = 3,
-    model: str = "gpt-4-turbo-preview",
+    model: str = "gpt-4o-mini",
     temperature: float = 0.7
 ):
     """

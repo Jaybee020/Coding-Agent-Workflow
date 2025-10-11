@@ -45,7 +45,7 @@ async def run_quick_demo():
     # Configure for a quick 1-round demo
     config = CodingCompetitionConfig(
         max_rounds=1,  # Just 1 round for demo
-        model_name="gpt-4-turbo-preview",
+        model_name="gpt-4o-mini",
         temperature=0.7,
         max_tokens=1500,
         scoring_rules={
@@ -136,7 +136,7 @@ async def run_multi_round_demo():
 
     config = CodingCompetitionConfig(
         max_rounds=3,
-        model_name="gpt-4-turbo-preview",
+        model_name="gpt-4o-mini",
         temperature=0.7
     )
 
