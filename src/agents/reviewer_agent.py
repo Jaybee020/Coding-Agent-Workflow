@@ -7,6 +7,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.exceptions import OutputParserException
 
 from ..core.models import (
     AgentRole, CodingCompetitionConfig, CodeReview
@@ -90,6 +91,31 @@ class ReviewerAgent(BaseAgent):
                 "round_winner": "<coderA|coderB|draw>",
                 "summary": "<overall comparison and round summary>"
             }
+            ```
+
+            # Examples
+
+            ## Valid JSON Output Example:
+            ```json
+            {
+                "coderA_correctness_score": 5,
+                "coderA_efficiency_score": 3,
+                "coderA_quality_score": 2,
+                "coderA_feedback": "CoderA's solution is correct, efficient, and well-structured.",
+
+                "coderB_correctness_score": 3,
+                "coderB_efficiency_score": 2,
+                "coderB_quality_score": 1,
+                "coderB_feedback": "CoderB's solution is partially correct but inefficient and poorly structured.",
+
+                "round_winner": "coderA",
+                "summary": "CoderA wins this round due to a more complete and efficient solution."
+            }
+            ```
+
+            ## Invalid JSON Output Example:
+            ```
+            The solutions were tested, and CoderA performed better than CoderB.
             ```
 
             # Guidelines
@@ -241,8 +267,8 @@ class ReviewerAgent(BaseAgent):
         return state
 
     def _parse_result(self, llm_result: Any) -> CodeReview:
-        """Return LLM result as-is since structured output is enforced."""
-        return self.argument_parser.invoke(llm_result)
+        """Parse LLM result - already handled by argument_parser in chain"""
+        return llm_result
 
     def _update_conversation_context(self, state: Dict[str, Any], message: str) -> None:
         """Update the conversation context in the state."""

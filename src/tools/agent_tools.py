@@ -35,7 +35,11 @@ def execute_code_sandbox(code: str, input_data: str) -> str:
     try:
         # Safely evaluate input_data to ensure correct type
         try:
-            evaluated_input = ast.literal_eval(input_data)
+            if not input_data.startswith("[") and not input_data.startswith("{") and not input_data.isdigit():
+                # Wrap plain strings in quotes
+                evaluated_input = ast.literal_eval(f'"{input_data}"')
+            else:
+                evaluated_input = ast.literal_eval(input_data)
         except (ValueError, SyntaxError):
             evaluated_input = input_data  # Fallback to string if evaluation fails
 

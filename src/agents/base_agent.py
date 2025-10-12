@@ -120,7 +120,6 @@ class BaseAgent(ABC):
             # Execute the tool
             result = tool_func.invoke(tool_args)
 
-            print(f"Tool '{tool_name}' executed with args {tool_args}, result: {result}")
 
             # Track tool usage
             self.metrics["tool_calls"] += 1
@@ -147,13 +146,13 @@ class BaseAgent(ABC):
         - If no tools needed, first call returns Pydantic object directly
         """
 
+
         if hasattr(llm_result, 'tool_calls') and llm_result.tool_calls:
             # Build message history for next LLM call
             messages = []
 
             # Add the AI message with tool calls
             messages.append(llm_result)
-            print("llm result in handle tool calls",llm_result)
 
             # Execute each tool call and add results
             for tool_call in llm_result.tool_calls:
@@ -162,7 +161,10 @@ class BaseAgent(ABC):
 
             # Re-invoke LLM with tool results to get final response
             # In structured output mode, this will return a Pydantic object
-            return self.llm_with_tools.invoke(messages)
+            print("Messages",messages)
+            pydantic_model = self.argument_parser.pydantic_object
+            llm_with_parser = self.llm_with_tools.with_structured_output(pydantic_model)
+            return llm_with_parser.invoke(messages)
 
         # No tool calls - return as-is
         # In structured output mode, this is already a Pydantic object
